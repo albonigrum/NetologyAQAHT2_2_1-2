@@ -27,11 +27,12 @@ public class CardWithDeliveryFormTest {
     static int COUNT_CORRECT_CITIES = 83;
     static final String CORRECT_CITIES_CSV_FILEPATH = "src/test/resources/CorrectCities.csv";
     static final int NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY = 3;
+    static final String PATTERN_OF_DATE = "dd.MM.yyyy";
 
     static String getDateAfterCurrent(int daysToAdd) {
         LocalDate date = LocalDate.now();
         date = date.plusDays(daysToAdd);
-        return date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+        return date.format(DateTimeFormatter.ofPattern(PATTERN_OF_DATE));
     }
 
     static String getRandomCorrectCity() {
@@ -75,12 +76,13 @@ public class CardWithDeliveryFormTest {
     }
 
     @Nested
-    class HappyPaths {
+    class HappyPathTests {
         @Test
         void shouldHappyPath() {
-            String testDate = getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY);
+            String dateToTest = getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY);
             $("[data-test-id=city] input").sendKeys(getRandomCorrectCity());
-            $("[data-test-id=date] input").doubleClick().sendKeys(testDate);
+            clearInputField($("[data-test-id=date] input"));
+            $("[data-test-id=date] input").sendKeys(dateToTest);
             $("[data-test-id=name] input").sendKeys("Иванов Иван");
             $("[data-test-id=phone] input").sendKeys("+12345678901");
             $("[data-test-id=agreement] input").parent().click();
@@ -88,14 +90,15 @@ public class CardWithDeliveryFormTest {
             SelenideElement notification =
                     $("[data-test-id=notification]").waitUntil(visible, TIME_TO_SUCCESS_LOAD_MILLISECONDS);
             assertTrue(notification.find(withText("Успешно!")).isDisplayed());
-            assertTrue(notification.find(withText(testDate)).isDisplayed());
+            assertTrue(notification.find(withText(dateToTest)).isDisplayed());
         }
 
         @Test
         void shouldHappyPathWithDifficultName() {
-            String testDate = getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY);
+            String dateToTest = getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY);
             $("[data-test-id=city] input").sendKeys(getRandomCorrectCity());
-            $("[data-test-id=date] input").doubleClick().sendKeys(testDate);
+            clearInputField($("[data-test-id=date] input"));
+            $("[data-test-id=date] input").sendKeys(dateToTest);
             $("[data-test-id=name] input").sendKeys("Салтыков-Щедрин Игорь");
             $("[data-test-id=phone] input").sendKeys("+12345678901");
             $("[data-test-id=agreement] input").parent().click();
@@ -103,15 +106,16 @@ public class CardWithDeliveryFormTest {
             SelenideElement notification =
                     $("[data-test-id=notification]").waitUntil(visible, TIME_TO_SUCCESS_LOAD_MILLISECONDS);
             assertTrue(notification.find(withText("Успешно!")).isDisplayed());
-            assertTrue(notification.find(withText(testDate)).isDisplayed());
+            assertTrue(notification.find(withText(dateToTest)).isDisplayed());
         }
 
         @Test
         void shouldHappyPathWithDashFormatDate() {
-            String testDate = getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY);
-            testDate = testDate.replaceAll(",", "-");
+            String dateToTest = getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY);
+            dateToTest = dateToTest.replaceAll(",", "-");
             $("[data-test-id=city] input").sendKeys(getRandomCorrectCity());
-            $("[data-test-id=date] input").doubleClick().sendKeys(testDate);
+            clearInputField($("[data-test-id=date] input"));
+            $("[data-test-id=date] input").sendKeys(dateToTest);
             $("[data-test-id=name] input").sendKeys("Салтыков-Щедрин Игорь");
             $("[data-test-id=phone] input").sendKeys("+12345678901");
             $("[data-test-id=agreement] input").parent().click();
@@ -119,12 +123,12 @@ public class CardWithDeliveryFormTest {
             SelenideElement notification =
                     $("[data-test-id=notification]").waitUntil(visible, TIME_TO_SUCCESS_LOAD_MILLISECONDS);
             assertTrue(notification.find(withText("Успешно!")).isDisplayed());
-            assertTrue(notification.find(withText(testDate)).isDisplayed());
+            assertTrue(notification.find(withText(dateToTest)).isDisplayed());
         }
     }
 
     @Nested
-    class FormsWithEmptyFields {
+    class FormsWithEmptyFieldsTests {
         @Test
         void shouldSendEmptyForm() {
             $("[data-test-id=date] input").doubleClick().sendKeys("\b");
@@ -180,7 +184,7 @@ getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY));
     }
 
     @Nested
-    class IncorrectDataInFields {
+    class IncorrectDataInFieldsTests {
         @ParameterizedTest
         @CsvSource(value = {
                 //"*/-*+.,^%$#@!~`",
@@ -281,6 +285,59 @@ getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY));
             $("[data-test-id=phone] input").sendKeys(phone);
             $$("button").find(exactText("Забронировать")).click();
             assertTrue($("[data-test-id=phone].input_invalid").isDisplayed());
+        }
+    }
+
+    @Nested
+    class CityAndDatePopupInputTests {
+        @Test
+        void shouldChooseVariantCityFromList() {
+            String dateToTest = getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY);
+            clearInputField($("[data-test-id=date] input"));
+            $("[data-test-id=date] input").sendKeys(dateToTest);
+            $("[data-test-id=name] input").sendKeys("Иванов Иван");
+            $("[data-test-id=phone] input").sendKeys("+12345678901");
+            $("[data-test-id=agreement] input").parent().click();
+
+            String cityToTest = getRandomCorrectCity();
+            $("[data-test-id=city] input").sendKeys(cityToTest.substring(0, 2));
+            $$(".menu .menu-item").find(exactText(cityToTest)).click();
+            $$("button").find(exactText("Забронировать")).click();
+            SelenideElement notification =
+                    $("[data-test-id=notification]").waitUntil(visible, TIME_TO_SUCCESS_LOAD_MILLISECONDS);
+            assertTrue(notification.find(withText("Успешно!")).isDisplayed());
+            assertTrue(notification.find(withText(dateToTest)).isDisplayed());
+        }
+        @Test
+        void shouldChooseDateAfterWeekFromTable() {
+            $("[data-test-id=city] input").sendKeys(getRandomCorrectCity());
+
+            $("[data-test-id=name] input").sendKeys("Иванов Иван");
+            $("[data-test-id=phone] input").sendKeys("+12345678901");
+            $("[data-test-id=agreement] input").parent().click();
+
+            SelenideElement calendar = $(".calendar");
+            $("[data-test-id=date]").click();
+
+            LocalDate today = LocalDate.now();
+            LocalDate dateToTest = today.plusDays(7);
+
+            if (dateToTest.getMonth() != today.getMonth()) {
+                calendar.find(".calendar__arrow_direction_right[data-step=1]").click();
+            }
+
+            calendar.$$(".calendar__day").find(
+                    exactText(Integer.toString(dateToTest.getDayOfMonth()))).click();
+
+            assertEquals(Integer.toString(dateToTest.getDayOfMonth()),
+                    calendar.$(".calendar__day_state_current").innerText());
+
+            $$("button").find(exactText("Забронировать")).click();
+            SelenideElement notification =
+                    $("[data-test-id=notification]").waitUntil(visible, TIME_TO_SUCCESS_LOAD_MILLISECONDS);
+            assertTrue(notification.find(withText("Успешно!")).isDisplayed());
+            assertTrue(notification.find(withText(
+                    dateToTest.format(DateTimeFormatter.ofPattern(PATTERN_OF_DATE)))).isDisplayed());
         }
     }
 }
