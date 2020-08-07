@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EmptySource;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -27,11 +28,16 @@ public class CardWithDeliveryFormTest {
     static int COUNT_CORRECT_CITIES = 83;
     static final String CORRECT_CITIES_CSV_FILEPATH = "src/test/resources/CorrectCities.csv";
     static final int NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY = 3;
+    static final String PATTERN_OF_DATE = "dd.MM.yyyy";
 
     static String getDateAfterCurrent(int daysToAdd) {
+        return getDateAfterCurrent(daysToAdd, PATTERN_OF_DATE);
+    }
+
+    static String getDateAfterCurrent(int daysToAdd, String pattern) {
         LocalDate date = LocalDate.now();
         date = date.plusDays(daysToAdd);
-        return date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+        return date.format(DateTimeFormatter.ofPattern(pattern));
     }
 
     static String getRandomCorrectCity() {
@@ -75,12 +81,13 @@ public class CardWithDeliveryFormTest {
     }
 
     @Nested
-    class HappyPaths {
+    class HappyPathTests {
         @Test
         void shouldHappyPath() {
-            String testDate = getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY);
+            String dateToTest = getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY);
             $("[data-test-id=city] input").sendKeys(getRandomCorrectCity());
-            $("[data-test-id=date] input").doubleClick().sendKeys(testDate);
+            clearInputField($("[data-test-id=date] input"));
+            $("[data-test-id=date] input").sendKeys(dateToTest);
             $("[data-test-id=name] input").sendKeys("Иванов Иван");
             $("[data-test-id=phone] input").sendKeys("+12345678901");
             $("[data-test-id=agreement] input").parent().click();
@@ -88,14 +95,15 @@ public class CardWithDeliveryFormTest {
             SelenideElement notification =
                     $("[data-test-id=notification]").waitUntil(visible, TIME_TO_SUCCESS_LOAD_MILLISECONDS);
             assertTrue(notification.find(withText("Успешно!")).isDisplayed());
-            assertTrue(notification.find(withText(testDate)).isDisplayed());
+            assertTrue(notification.find(withText(dateToTest)).isDisplayed());
         }
 
         @Test
         void shouldHappyPathWithDifficultName() {
-            String testDate = getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY);
+            String dateToTest = getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY);
             $("[data-test-id=city] input").sendKeys(getRandomCorrectCity());
-            $("[data-test-id=date] input").doubleClick().sendKeys(testDate);
+            clearInputField($("[data-test-id=date] input"));
+            $("[data-test-id=date] input").sendKeys(dateToTest);
             $("[data-test-id=name] input").sendKeys("Салтыков-Щедрин Игорь");
             $("[data-test-id=phone] input").sendKeys("+12345678901");
             $("[data-test-id=agreement] input").parent().click();
@@ -103,85 +111,31 @@ public class CardWithDeliveryFormTest {
             SelenideElement notification =
                     $("[data-test-id=notification]").waitUntil(visible, TIME_TO_SUCCESS_LOAD_MILLISECONDS);
             assertTrue(notification.find(withText("Успешно!")).isDisplayed());
-            assertTrue(notification.find(withText(testDate)).isDisplayed());
+            assertTrue(notification.find(withText(dateToTest)).isDisplayed());
         }
 
         @Test
         void shouldHappyPathWithDashFormatDate() {
-            String testDate = getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY);
-            testDate = testDate.replaceAll(",", "-");
+            String dateToCheck = getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY);
+            String dateToTest = getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY, "dd-MM-yyyy");
             $("[data-test-id=city] input").sendKeys(getRandomCorrectCity());
-            $("[data-test-id=date] input").doubleClick().sendKeys(testDate);
-            $("[data-test-id=name] input").sendKeys("Салтыков-Щедрин Игорь");
+            clearInputField($("[data-test-id=date] input"));
+            $("[data-test-id=date] input").sendKeys(dateToTest);
+            $("[data-test-id=name] input").sendKeys("Иванов Иван");
             $("[data-test-id=phone] input").sendKeys("+12345678901");
             $("[data-test-id=agreement] input").parent().click();
             $$("button").find(exactText("Забронировать")).click();
             SelenideElement notification =
                     $("[data-test-id=notification]").waitUntil(visible, TIME_TO_SUCCESS_LOAD_MILLISECONDS);
             assertTrue(notification.find(withText("Успешно!")).isDisplayed());
-            assertTrue(notification.find(withText(testDate)).isDisplayed());
+            assertTrue(notification.find(withText(dateToCheck)).isDisplayed());
         }
     }
 
     @Nested
-    class FormsWithEmptyFields {
-        @Test
-        void shouldSendEmptyForm() {
-            $("[data-test-id=date] input").doubleClick().sendKeys("\b");
-            $$("button").find(exactText("Забронировать")).click();
-
-            assertTrue($("[data-test-id=city].input_invalid").isDisplayed());
-        }
-
-        @Test
-        void shouldSendFormWithOnlyCity() {
-            $("[data-test-id=city] input").sendKeys(getRandomCorrectCity());
-            $("[data-test-id=date] input").doubleClick().sendKeys("\b");
-            $$("button").find(exactText("Забронировать")).click();
-
-            assertTrue($("[data-test-id=date] .input.input_invalid").isDisplayed());
-        }
-
-        @Test
-        void shouldSendFormWithOnlyCityDate() {
-            $("[data-test-id=city] input").sendKeys(getRandomCorrectCity());
-            clearInputField($("[data-test-id=date] input"));
-            $("[data-test-id=date] input").sendKeys(
-getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY));
-            $$("button").find(exactText("Забронировать")).click();
-
-            assertTrue($("[data-test-id=name].input_invalid").isDisplayed());
-        }
-
-        @Test
-        void shouldSendFormWithOnlyCityDateName() {
-            $("[data-test-id=city] input").sendKeys(getRandomCorrectCity());
-            clearInputField($("[data-test-id=date] input"));
-            $("[data-test-id=date] input").sendKeys(
-getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY));
-            $("[data-test-id=name] input").sendKeys("Иванов Иван");
-            $$("button").find(exactText("Забронировать")).click();
-
-            assertTrue($("[data-test-id=phone].input_invalid").isDisplayed());
-        }
-
-        @Test
-        void shouldSendFormWithOnlyCityDateNamePhone() {
-            $("[data-test-id=city] input").sendKeys(getRandomCorrectCity());
-            clearInputField($("[data-test-id=date] input"));
-            $("[data-test-id=date] input").sendKeys(getDateAfterCurrent(3));
-            $("[data-test-id=name] input").sendKeys("Иванов Иван");
-            $("[data-test-id=phone] input").sendKeys("+12345678901");
-            $$("button").find(exactText("Забронировать")).click();
-
-            assertTrue($("[data-test-id=agreement].input_invalid").isDisplayed());
-        }
-
-    }
-
-    @Nested
-    class IncorrectDataInFields {
+    class IncorrectDataInFieldsTests {
         @ParameterizedTest
+        @EmptySource
         @CsvSource(value = {
                 //"*/-*+.,^%$#@!~`",
                 "Ялта",
@@ -191,7 +145,7 @@ getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY));
         void shouldSendWithIncorrectCity(String city) {
             clearInputField($("[data-test-id=date] input"));
             $("[data-test-id=date] input").sendKeys(
-getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY));
+                    getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY));
             $("[data-test-id=name] input").sendKeys("Иванов Иван");
             $("[data-test-id=phone] input").sendKeys("+12345678901");
             $("[data-test-id=agreement] input").parent().click();
@@ -202,6 +156,7 @@ getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY));
         }
 
         @ParameterizedTest
+        @EmptySource
         @CsvSource(value = {
                 "*/-*+.,^%$#@!~`",
                 "Ivanov",
@@ -230,19 +185,10 @@ getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY));
             $("[data-test-id=date] input").sendKeys(getDateAfterCurrent(0));
             $$("button").find(exactText("Забронировать")).click();
             assertTrue($("[data-test-id=date] .input.input_invalid").isDisplayed());
-
-            clearInputField($("[data-test-id=date] input"));
-            $("[data-test-id=date] input").doubleClick().sendKeys(getDateAfterCurrent(1));
-            $$("button").find(exactText("Забронировать")).click();
-            assertTrue($("[data-test-id=date] .input.input_invalid").isDisplayed());
-
-            clearInputField($("[data-test-id=date] input"));
-            $("[data-test-id=date] input").doubleClick().sendKeys(getDateAfterCurrent(2));
-            $$("button").find(exactText("Забронировать")).click();
-            assertTrue($("[data-test-id=date] .input.input_invalid").isDisplayed());
         }
 
         @ParameterizedTest
+        @EmptySource
         @CsvSource(value = {
                 "*/*+.,^%$#@!~`",
                 "Ivanov",
@@ -252,7 +198,7 @@ getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY));
             $("[data-test-id=city] input").sendKeys(getRandomCorrectCity());
             clearInputField($("[data-test-id=date] input"));
             $("[data-test-id=date] input").sendKeys(
-getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY));
+                    getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY));
             $("[data-test-id=phone] input").sendKeys("+12345678901");
             $("[data-test-id=agreement] input").parent().click();
 
@@ -262,6 +208,7 @@ getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY));
         }
 
         @ParameterizedTest
+        @EmptySource
         @CsvSource(value = {
                 "*/*+.,^%$#@!~`",
                 "Ivanov",
@@ -281,6 +228,19 @@ getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY));
             $("[data-test-id=phone] input").sendKeys(phone);
             $$("button").find(exactText("Забронировать")).click();
             assertTrue($("[data-test-id=phone].input_invalid").isDisplayed());
+        }
+
+        @Test
+        void shouldSendWithIncorrectAgreement() {
+            $("[data-test-id=city] input").sendKeys(getRandomCorrectCity());
+            clearInputField($("[data-test-id=date] input"));
+            $("[data-test-id=date] input").sendKeys(
+                    getDateAfterCurrent(NUMBER_DAYS_TO_AVAILABLE_TO_ORDER_FROM_TODAY));
+            $("[data-test-id=name] input").sendKeys("Иванов Иван");
+            $("[data-test-id=phone] input").sendKeys("+12345678901");
+            $$("button").find(exactText("Забронировать")).click();
+
+            assertTrue($("[data-test-id=agreement].input_invalid").isDisplayed());
         }
     }
 }
