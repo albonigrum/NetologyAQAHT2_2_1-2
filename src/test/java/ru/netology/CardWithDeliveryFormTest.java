@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EmptySource;
+import org.openqa.selenium.Keys;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -19,7 +20,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static com.codeborne.selenide.Condition.*;
-import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -58,7 +58,7 @@ public class CardWithDeliveryFormTest {
     }
 
     static void clearInputField(SelenideElement elem) {
-        elem.sendKeys("\b".repeat(elem.getValue().length()));
+        elem.sendKeys(Keys.CONTROL + "a" + Keys.DELETE);
     }
 
     @BeforeAll
@@ -94,8 +94,7 @@ public class CardWithDeliveryFormTest {
             $$("button").find(exactText("Забронировать")).click();
             SelenideElement notification =
                     $("[data-test-id=notification]").waitUntil(visible, TIME_TO_SUCCESS_LOAD_MILLISECONDS);
-            assertTrue(notification.find(withText("Успешно!")).isDisplayed());
-            assertTrue(notification.find(withText(dateToTest)).isDisplayed());
+            notification.shouldHave(text("Успешно!")).shouldHave(text(dateToTest));
         }
 
         @Test
@@ -110,8 +109,7 @@ public class CardWithDeliveryFormTest {
             $$("button").find(exactText("Забронировать")).click();
             SelenideElement notification =
                     $("[data-test-id=notification]").waitUntil(visible, TIME_TO_SUCCESS_LOAD_MILLISECONDS);
-            assertTrue(notification.find(withText("Успешно!")).isDisplayed());
-            assertTrue(notification.find(withText(dateToTest)).isDisplayed());
+            notification.shouldHave(text("Успешно!")).shouldHave(text(dateToTest));
         }
 
         @Test
@@ -127,8 +125,7 @@ public class CardWithDeliveryFormTest {
             $$("button").find(exactText("Забронировать")).click();
             SelenideElement notification =
                     $("[data-test-id=notification]").waitUntil(visible, TIME_TO_SUCCESS_LOAD_MILLISECONDS);
-            assertTrue(notification.find(withText("Успешно!")).isDisplayed());
-            assertTrue(notification.find(withText(dateToCheck)).isDisplayed());
+            notification.shouldHave(text("Успешно!")).shouldHave(text(dateToCheck));
         }
     }
 
